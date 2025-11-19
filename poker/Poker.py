@@ -76,7 +76,16 @@ def evaluate_hand(hand):
 
     # Höchste Kombis (Flush & Straight)
     if is_straight and is_flush:
-        return "Straight Flush"
+        # Prüfe auf Royal Flush (10, J, Q, K, A in einer Farbe)
+        rank_indices = sorted([ranks.index(card[:-1]) for card in hand])
+
+        # Die Indices für 10, J, Q, K, A sind 8, 9, 10, 11, 12
+        if rank_indices == [8, 9, 10, 11, 12]:
+            return "Royal Flush"
+
+        return "Straight Flush"  # Normale Straße in einer Farbe
+
+    # Reine Flush und Straight
     if is_flush:
         return "Flush"  # Flash
     if is_straight:
@@ -86,7 +95,7 @@ def evaluate_hand(hand):
     return evaluate_rank_combinations(hand)
 
 
-# --- Simulation und Ausgabe ---
+# --- Simulation und erweiterte Ausgabe ---
 
 def simulate(games):
     """Spielt X mal und zählt die Ergebnisse."""
@@ -97,35 +106,69 @@ def simulate(games):
     return results
 
 
-def print_results(results, total):
-    """Berechnet den prozentualen Anteil und gibt die Ergebnisse aus."""
-    print("\n" + "=" * 50)
-    print(f"Poker Simulation über {total} Spiele")
-    print("=" * 50)
+def print_results(results, total, theoretical_probs):
+    """Berechnet den prozentualen Anteil und vergleicht mit theoretischen Werten."""
 
-    # Sortierung für übersichtliche Ausgabe (Poker-Hierarchie)
-    order = ["Straight Flush", "Four of a Kind", "Full House", "Flush", "Straight",
-             "Three of a Kind", "Two Pair", "One Pair", "High Card"]
+    print("\n" + "=" * 80)
+    print(f"Poker Simulation über {total} Spiele".center(80))
+    print("=" * 80)
+    print(f"{'Kombination':<20}{'Simuliert (%)':<15}{'Theorie (%)':<15}{'Abweichung (%)':<15}")
+    print("-" * 80)
 
-    sorted_results = {combo: results.get(combo, 0) for combo in order if combo in results}
+    # Reihenfolge festlegen (Poker-Hierarchie), basierend auf den theoretischen Werten
+    order = list(theoretical_probs.keys())
+    total_percent_simulated = 0
 
-    for combo, count in sorted_results.items():
-        percent = count / total * 100
-        print(f"{combo:<18}: {count:<8} ({percent:7.4f} %)")  # Anteil berechnet
-    print("-" * 50)
+    for combo in order:
+        count = results.get(combo, 0)
+
+        # Simulierte Berechnung
+        simulated_percent = (count / total * 100) if total > 0 else 0
+        total_percent_simulated += simulated_percent
+
+        # Theorie
+        # Holt den Wert aus dem übergebenen Dictionary
+        theoretical_percent = theoretical_probs.get(combo, 0.0)
+
+        # Abweichung berechnen
+        deviation = simulated_percent - theoretical_percent
+
+        # Ausgabe
+        print(
+            f"{combo:<20}"
+            f"{simulated_percent:12.4f} %"
+            f"{theoretical_percent:12.4f} %"
+            f"{deviation:12.4f} %"
+        )
+
+    print("-" * 80)
+    # Die theoretische Summe ist nicht exakt 100.0000% wegen der Rundung der Einzelwerte
+    theoretical_total = sum(theoretical_probs.values())
+    print(f"{'Summe (Simuliert/Theorie)':<20}{total_percent_simulated:12.4f} %{theoretical_total:12.4f} %{'':<15}")
+    print("=" * 80)
 
 
 def main():
+    # Theoretische Wahrscheinlichkeiten (Five Card Draw)
+    true_percents = {
+        "Royal Flush": 0.000154,
+        "Straight Flush": 0.001385,
+        "Four of a Kind": 0.02401,
+        "Full House": 0.1441,
+        "Flush": 0.1965,
+        "Straight": 0.3925,
+        "Three of a Kind": 2.1128,
+        "Two Pair": 4.7539,
+        "One Pair": 42.2569,
+        "High Card": 50.1177
+    }
+
     # Spiele 100.000 mal und zähle
     GAMES = 100000
     simulation_results = simulate(GAMES)
 
-    # Gib die Ergebnisse aus
-    print_results(simulation_results, GAMES)
-
-    # Hinweis zur Aufgabe: Recherchiere die richtigen Anteile und vergleiche
-    print("-> Nächster Schritt: Vergleich der Ergebnisse mit theoretischen Wahrscheinlichkeiten.")
-
+    # Gib die Ergebnisse aus und vergleiche mit true_percents
+    print_results(simulation_results, GAMES, true_percents)
 
 if __name__ == "__main__":
     main()

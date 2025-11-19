@@ -1,5 +1,5 @@
 import random
-import array
+import array as arr
 
 class Lotto:
 
@@ -17,7 +17,7 @@ class Lotto:
         Draw 6 random lotto numbers from 1 to 45 without repetition.
         Returns a list of 6 drawn numbers.
         """
-        numbers = array.array("i", range(1, 46))  # create array 1–45
+        numbers = arr.array("i", range(1, 46))  # create array 1–45
 
         # draw 6 numbers by swapping random positions to the end
         for i in range(6):
