@@ -1,14 +1,14 @@
 import random
+import unittest
 
 # ================================
-# Poker Simulator (Aufgabe Herbstferien)
+# Poker Simulator
 # =================================
 
 # --- Deck modellieren ---
-suits = ['♠', '♥', '♦', '♣']  # Vier Farben
-ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']  # 13 Symbole
-
-deck = [rank + suit for suit in suits for rank in ranks]  # Erstellt 52 Karten
+suits = ['♠', '♥', '♦', '♣']
+ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+deck = [rank + suit for suit in suits for rank in ranks]
 
 
 # --- Funktionen zur Kartenausgabe & Zählung ---
@@ -22,7 +22,7 @@ def count_ranks(hand):
     """Zählt Häufigkeit jedes Kartenwertes für Paare/Drillinge."""
     counts = {}
     for card in hand:
-        rank = card[:-1]  # Extrahiere Wert ohne Farbe
+        rank = card[:-1]
         counts[rank] = counts.get(rank, 0) + 1
     return counts
 
@@ -32,20 +32,15 @@ def count_ranks(hand):
 def check_for_flush(hand):
     """Prüft auf 'Flash' (Flush: gleiche Farbe)."""
     suits_in_hand = [card[-1] for card in hand]
-    return len(set(suits_in_hand)) == 1  # Alle Farben identisch?
+    return len(set(suits_in_hand)) == 1
 
 
 def check_for_straight(hand):
     """Prüft auf 'Strasse' (Straight: aufeinanderfolgende Werte)."""
     rank_order = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
     rank_values = sorted([rank_order.index(card[:-1]) for card in hand])
-
-    # Normale Straße (5-6-7-8-9)
     is_normal_straight = all(rank_values[i] - rank_values[i - 1] == 1 for i in range(1, 5))
-
-    # Spezialfall A-2-3-4-5 (niedrige Straße)
     is_low_ace_straight = set(rank_values) == {0, 1, 2, 3, 12}
-
     return is_normal_straight or is_low_ace_straight
 
 
@@ -54,17 +49,16 @@ def check_for_straight(hand):
 def evaluate_rank_combinations(hand):
     """Erkennt alle wertebasierten Kombis (Paar, Drilling, Full House, Poker)."""
     values = list(count_ranks(hand).values())
-
     if 4 in values:
-        return "Four of a Kind"  # Poker (Vierling)
+        return "Four of a Kind"
     elif 3 in values and 2 in values:
         return "Full House"
     elif 3 in values:
-        return "Three of a Kind"  # Drilling
+        return "Three of a Kind"
     elif values.count(2) == 2:
         return "Two Pair"
     elif 2 in values:
-        return "One Pair"  # Paar
+        return "One Pair"
     else:
         return "High Card"
 
@@ -74,28 +68,45 @@ def evaluate_hand(hand):
     is_flush = check_for_flush(hand)
     is_straight = check_for_straight(hand)
 
-    # Höchste Kombis (Flush & Straight)
     if is_straight and is_flush:
-        # Prüfe auf Royal Flush (10, J, Q, K, A in einer Farbe)
         rank_indices = sorted([ranks.index(card[:-1]) for card in hand])
-
-        # Die Indices für 10, J, Q, K, A sind 8, 9, 10, 11, 12
         if rank_indices == [8, 9, 10, 11, 12]:
             return "Royal Flush"
+        return "Straight Flush"
 
-        return "Straight Flush"  # Normale Straße in einer Farbe
-
-    # Reine Flush und Straight
     if is_flush:
-        return "Flush"  # Flash
+        return "Flush"
     if is_straight:
-        return "Straight"  # Strasse
+        return "Straight"
 
-    # Wertebasierte Kombis
     return evaluate_rank_combinations(hand)
 
+# --- UNIT TESTS (2 SUCCESS, 2 FAILURE) ---
+class TestPokerLogicSUCCESS(unittest.TestCase):
+    """Testet die Kernlogik der Poker-Kombinationserkennung (2 Erfolge, 2 Fehler)."""
 
-# --- Simulation und erweiterte Ausgabe ---
+    def test_1_full_house(self):
+        """SUCCESS: Testet eine korrekte Full House Erkennung."""
+        hand = ['K♠', 'K♥', 'K♦', '2♣', '2♠']
+        self.assertEqual(evaluate_hand(hand), "Full House", "Sollte Full House erkennen.")
+
+    def test_2_straight_negative_gap_FAILURE(self):
+        """FAILURE: Hand ist High Card, aber erwartet wird fälschlicherweise Straight."""
+        hand = ['2♠', '3♥', '4♦', '5♣', '7♠']
+        self.assertEqual(evaluate_hand(hand), "Straight", "FEHLER SIMULIERT: Ist High Card, erwartet Straight.")
+
+    def test_3_royal_flush(self):
+        """SUCCESS: Testet die höchste Kombination (Royal Flush)."""
+        hand = ['A♠', 'K♠', 'Q♠', 'J♠', '10♠']
+        self.assertEqual(evaluate_hand(hand), "Royal Flush", "Sollte Royal Flush erkennen.")
+
+    def test_4_pure_flush_FAILURE(self):
+        """FAILURE: Hand ist Flush, aber erwartet wird fälschlicherweise Straight Flush."""
+        hand = ['A♥', 'K♥', 'Q♥', '9♥', '7♥']
+        self.assertEqual(evaluate_hand(hand), "Straight Flush", "FEHLER SIMULIERT: Ist Flush, erwartet Straight Flush.")
+
+
+# --- SIMULATIONS- UND PRINT-FUNKTIONEN ---
 
 def simulate(games):
     """Spielt X mal und zählt die Ergebnisse."""
@@ -121,19 +132,11 @@ def print_results(results, total, theoretical_probs):
 
     for combo in order:
         count = results.get(combo, 0)
-
-        # Simulierte Berechnung
         simulated_percent = (count / total * 100) if total > 0 else 0
         total_percent_simulated += simulated_percent
-
-        # Theorie
-        # Holt den Wert aus dem übergebenen Dictionary
         theoretical_percent = theoretical_probs.get(combo, 0.0)
-
-        # Abweichung berechnen
         deviation = simulated_percent - theoretical_percent
 
-        # Ausgabe
         print(
             f"{combo:<20}"
             f"{simulated_percent:12.4f} %"
@@ -142,13 +145,20 @@ def print_results(results, total, theoretical_probs):
         )
 
     print("-" * 80)
-    # Die theoretische Summe ist nicht exakt 100.0000% wegen der Rundung der Einzelwerte
     theoretical_total = sum(theoretical_probs.values())
     print(f"{'Summe (Simuliert/Theorie)':<20}{total_percent_simulated:12.4f} %{theoretical_total:12.4f} %{'':<15}")
     print("=" * 80)
 
 
 def main():
+    # --- Führe die Unit Tests aus (findet TestPokerLogicSUCCESS automatisch) ---
+    print("--- Starte Unit Tests ---")
+
+    # Der Test wird ausgeführt und sollte 2 Erfolge und 2 Fehler melden.
+    unittest.main(argv=['first-arg-is-ignored'], exit=False)
+
+    print("-------------------------")
+
     # Theoretische Wahrscheinlichkeiten (Five Card Draw)
     true_percents = {
         "Royal Flush": 0.000154,
@@ -169,6 +179,7 @@ def main():
 
     # Gib die Ergebnisse aus und vergleiche mit true_percents
     print_results(simulation_results, GAMES, true_percents)
+
 
 if __name__ == "__main__":
     main()
