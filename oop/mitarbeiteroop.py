@@ -10,7 +10,6 @@ class Mitarbeiter(Person):
     def __init__(self, name, geschlecht, abteilung):
         super().__init__(name, geschlecht)
         self.abteilung = abteilung
-        # Mitarbeiter zur Abteilung hinzufügen
         abteilung.mitarbeiter_hinzufuegen(self)
 
     def __str__(self):
@@ -19,7 +18,6 @@ class Mitarbeiter(Person):
 class Abteilungsleiter(Mitarbeiter):
     def __init__(self, name, geschlecht, abteilung):
         super().__init__(name, geschlecht, abteilung)
-        # Abteilungsleiter setzen
         abteilung.leiter_setzen(self)
 
     def __str__(self):
